@@ -1,13 +1,64 @@
 [
   {
     "name": "week",
-    "title": "This week",
-    "subtitle": "Removals for Claude Code: what needs attention, rendered by npm run view",
+    "title": "The fortnight",
+    "subtitle": "Moves booked, crew hours, quotes to chase and money owed",
     "sections": [
       {
-        "title": "Needs attention",
-        "note": "TODO(author): point this at the industry's attention view (overdue, stuck, quiet).",
-        "sql": "select 'replace me' as item, 'TODO(author)' as why"
+        "title": "Moves in the next 14 days",
+        "sql": "select j.move_on, j.name as job, j.customer, j.kind, j.volume_m3, j.crew_booked, j.trucks, case when j.deposit = 0 then 'none asked' when j.deposit_paid >= j.deposit then 'paid' else 'not paid' end as deposit, coalesce(j.insurance, 'not asked') as insurance from job_detail j where j.status = 'booked' and j.move_on between mover_today() and mover_today() + 14 order by j.move_on"
+      },
+      {
+        "title": "Crew diary",
+        "note": "Days over the fatigue limit for heavy vehicle drivers are flagged (NHVR standard hours by default; the profile holds the limit).",
+        "sql": "select d.work_on, d.crew, d.role, d.hours, d.jobs, case when d.drove_heavy and d.hours > p.max_work_hours then 'over limit' else '' end as flag from crew_days d cross join company_profile p where d.work_on between mover_today() and mover_today() + 14 order by d.work_on, d.crew"
+      },
+      {
+        "title": "Quotes to chase",
+        "sql": "select j.name as job, j.customer, j.quote_amount, j.quote_sent_on, j.quote_valid_to, j.move_on, case when j.quote_valid_to < mover_today() then 'expired' when coalesce(j.last_follow_up_on, j.quote_sent_on) <= mover_today() - p.follow_up_days then 'follow up' else 'waiting' end as stage from job_detail j cross join company_profile p where j.status = 'quoted' order by j.move_on"
+      },
+      {
+        "title": "Money owed",
+        "sql": "select name as invoice, customer, job, kind, balance, due_on, mover_today() - due_on as days_overdue from invoice_balances where not void and balance > 0 and due_on < mover_today() order by due_on"
+      }
+    ]
+  },
+  {
+    "name": "sales",
+    "title": "Quotes and wins",
+    "subtitle": "Where the work comes from, what is won and lost, and how good the estimates are",
+    "sections": [
+      {
+        "title": "Win rate by source, last 12 months",
+        "sql": "select coalesce(source, 'unknown') as source, count(*) as enquiries, count(*) filter (where status in ('booked', 'completed')) as won, count(*) filter (where status = 'lost') as lost, coalesce(sum(quote_amount) filter (where status in ('booked', 'completed')), 0) as value_won from jobs where enquiry_on >= mover_today() - 365 group by 1 order by value_won desc"
+      },
+      {
+        "title": "Lost and why",
+        "sql": "select name as job, coalesce(lost_reason, 'not recorded') as reason, quote_amount, enquiry_on from jobs where status = 'lost' order by enquiry_on desc"
+      },
+      {
+        "title": "Estimated hours against actual",
+        "sql": "select name as job, kind, est_hours, actual_hours, actual_hours - est_hours as over_hours from jobs where status = 'completed' and est_hours is not null and actual_hours is not null order by completed_on desc"
+      }
+    ]
+  },
+  {
+    "name": "storage",
+    "title": "Storage",
+    "subtitle": "Every account, the overdue ladder and rates below today's standard",
+    "sections": [
+      {
+        "title": "Accounts",
+        "sql": "select name as account, customer, containers, location, rate, billed_to, owing, days_overdue from storage_detail where status = 'active' order by name"
+      },
+      {
+        "title": "Overdue",
+        "note": "Overdue notice from 30 days, final notice from 60, sale or disposal no sooner than 28 days after the final notice (the profile holds your periods).",
+        "sql": "select name as account, customer, owing, days_overdue, overdue_notice_on, final_notice_on from storage_detail where status = 'active' and days_overdue > 0 order by days_overdue desc"
+      },
+      {
+        "title": "Under the standard rate",
+        "sql": "select name as account, customer, rate, standard_rate, standard_rate - rate as gap, coalesce(last_increase_on, start_on) as last_change from storage_detail where status = 'active' and rate < standard_rate order by standard_rate - rate desc"
       }
     ]
   }

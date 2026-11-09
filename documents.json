@@ -1,11 +1,47 @@
 [
   {
-    "name": "example",
-    "title": "TODO(author): the first document this industry must produce",
-    "for_each": "select gen_random_uuid() as id, 'Example' as name",
+    "name": "quote",
+    "title": "Moving quote",
+    "for_each": "select id, name from jobs where status in ('quoted', 'booked') and quote_amount is not null order by name",
     "file": "name",
     "sections": [
-      { "title": "Details", "sql": "select 'replace me' as item, $1::text as record_id" }
+      { "title": "Your move", "layout": "record", "sql": "select name as quote, customer, from_address as moving_from, to_address as moving_to, move_on as move_date, kind as type_of_move, volume_m3 as cubic_metres, quote_valid_to as valid_until from job_detail where id = $1" },
+      { "title": "What we are moving", "sql": "select room, name as item, qty, round(qty * m3_each, 1) as cubic_metres from inventory where job_id = $1 order by room, name" },
+      { "title": "Price", "note": "Pick-up and delivery on the move date unless agreed otherwise in writing. If there are more goods on the day than listed, we agree the change with you in writing before we move them. Transit insurance is available and covers your goods while packed, moved and stored.", "sql": "select j.quote_amount as price, case when j.to_storage then j.storage_rate end as storage_per_month, round(j.quote_amount * p.deposit_pct / 100, 2) as deposit_to_book, j.quote_valid_to as valid_until from jobs j cross join company_profile p where j.id = $1" }
+    ]
+  },
+  {
+    "name": "run-sheet",
+    "title": "Crew run sheet",
+    "for_each": "select id, name from jobs where status = 'booked' and move_on between mover_today() and mover_today() + 7 order by move_on, name",
+    "file": "name",
+    "sections": [
+      { "title": "The job", "layout": "record", "sql": "select name as job, customer, phone, move_on as date, from_address as pick_up, to_address as deliver_to, volume_m3 as cubic_metres, est_hours as estimated_hours, case when packing then 'yes' else 'no' end as packing, coalesce(insurance, 'not asked') as transit_insurance from job_detail where id = $1" },
+      { "title": "Crew and truck", "sql": "select a.work_on as day, c.name as crew, c.role, t.name as truck, a.hours, case when a.driving then 'driving' else '' end as driving from allocations a join crew c on c.id = a.crew_id left join trucks t on t.id = a.truck_id where a.job_id = $1 order by a.work_on, c.role, c.name" },
+      { "title": "Take extra care", "note": "Items declared at or over the high-value limit. Photograph condition at pick-up.", "sql": "select i.room, i.name as item, i.value, i.declared_on from inventory i cross join company_profile p where i.job_id = $1 and i.value >= p.high_value_limit order by i.room" },
+      { "title": "Inventory", "sql": "select room, name as item, qty from inventory where job_id = $1 order by room, name" }
+    ]
+  },
+  {
+    "name": "storage-statement",
+    "title": "Storage account statement",
+    "for_each": "select id, name from storage_accounts where status = 'active' order by name",
+    "file": "name",
+    "sections": [
+      { "title": "Account", "layout": "record", "sql": "select name as account, customer, containers, location, rate as monthly_rate, start_on as in_storage_since, billed_to as invoiced_to from storage_detail where id = $1" },
+      { "title": "Invoices", "sql": "select name as invoice, period_from, period_to, amount, balance as left_to_pay, due_on from invoice_balances where storage_id = $1 and not void order by due_on" },
+      { "title": "Balance", "sql": "select coalesce(sum(balance), 0) as total_to_pay, coalesce(sum(balance) filter (where due_on < mover_today()), 0) as overdue from invoice_balances where storage_id = $1 and not void" }
+    ]
+  },
+  {
+    "name": "final-notice",
+    "title": "Final notice: goods in storage",
+    "for_each": "select s.id, s.name from storage_detail s cross join company_profile p where s.status = 'active' and s.overdue_notice_on is not null and s.days_overdue >= p.storage_final_days order by s.name",
+    "file": "name",
+    "sections": [
+      { "title": "Account", "layout": "record", "sql": "select name as account, customer, containers, location, oldest_due as unpaid_since, overdue_notice_on as first_notice from storage_detail where id = $1" },
+      { "title": "Money owing", "sql": "select name as invoice, period_from, period_to, balance as owing, due_on from invoice_balances where storage_id = $1 and not void and balance > 0 order by due_on" },
+      { "title": "What happens next", "note": "If the account is not paid, or you do not contact us to collect your goods, we may sell or dispose of them from the date below, as our storage terms and the uncollected goods law that applies allow. Money from a sale above what is owed and the costs of the sale is yours.", "sql": "select s.owing as total_owing, mover_today() + p.storage_sale_notice_days as sale_or_disposal_from from storage_detail s cross join company_profile p where s.id = $1" }
     ]
   }
 ]

@@ -1,11 +1,17 @@
 ---
-description: Check the records against the rules this industry lives under (the ones listed in docs/compliance.md) and report what is missing, late, or about to breach, with the rule cited.
+description: Check the records against the rules a removals and storage business works under (written quotes, variations in writing, transit insurance, subcontract consent, high-value declarations, heavy vehicle fatigue hours, licences, storage rate notices, uncollected goods, claims) and report every breach with its source.
 ---
 
-1. Read `docs/compliance.md`. Each rule has a name, the source it comes from, what a breach looks like in the data, and the SQL or command that finds it.
-2. Run each check. Use the CLI's `--json` output or a direct query through `scripts/lib/db.mjs`.
-3. Report as a table: rule, count, the worst example (name and days), the source. Order by severity: breached first, then due within 7 days, then clean.
-4. For anything breached, draft the fix the operator can approve: the record to update, the notice to send (draft to `drafts/`, never send), or the task to add.
-5. If a rule in `docs/compliance.md` is out of date, say so and stop. Do not guess at law. The operator confirms the rule, then you update the doc and the check together.
+# /compliance
 
-Nothing here is legal advice. The doc records the rules the operator has told the system to enforce, with sources, and this command checks the data against them.
+Run:
+
+```bash
+node scripts/removals.mjs compliance --json
+```
+
+1. Group by rule, worst first: fatigue and licences (people on the road), then uncollected goods and storage notices (legal exposure), then quotes, variations, insurance and consent, then claims.
+2. For each breach, give the record, what is wrong and the fix: the command to run or the draft to write (to `drafts/`, never sent).
+3. The rules, their sources and the settings that drive them are in `docs/compliance.md`. If a rule looks out of date or does not match the operator's state, terms or New Zealand, say so and stop. The operator confirms, then you change the setting with `set company_profile`, or the rule and the doc together.
+
+Nothing here is legal advice. It checks the records against the rules the operator has told the system to enforce.

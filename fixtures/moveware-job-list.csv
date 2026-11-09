@@ -1,0 +1,6 @@
+Job No,Customer Name,Email,Mobile,Job Type,Origin,Destination,Enquiry Date,Quote Date,Move Date,Status,Quote Amount,Volume (m3),Estimated Hours,Storage,Storage Rate,Lead Source,Lost Reason
+MW-24101,Hannah Moore,hannah.moore@example.org,0400 555 401,Local Removal,"18 Pine St, Chatswood","4 Oak Ave, Lane Cove",02/11/2026,04/11/2026,28/11/2026,Quoted,"1,620.00",24.5,9,No,,Google,
+MW-24102,"Fraser, Tom",tom.fraser@example.org,0400 555 402,Interstate,"7 Bay Rd, Wollongong","11 Hay St, Perth",20/10/2026,22/10/2026,20/11/2026,Booked,"9,850.00",48,,No,,Referral,
+MW-24103,Kirra Lane,kirra.lane@example.org,0400 555 403,Local Removal,"3 Short St, Bondi","Depot, storage",15/09/2026,16/09/2026,01/10/2026,Completed,"1,180.00",14,6,Yes,165.00,Website,
+MW-24104,Owen Price,owen.price@example.org,0400 555 404,Local Removal,"9 Long St, Ryde","2 Wide Rd, Epping",01/10/2026,03/10/2026,25/10/2026,Lost,980.00,,5,No,,Google,Price
+MW-24105,Daniel Lee,daniel.lee@example.com,0400 555 102,Office Relocation,"Level 2, 1 George St, Sydney","Level 5, 60 Miller St, North Sydney",07/11/2026,,12/12/2026,Enquiry,,,,No,,Google,

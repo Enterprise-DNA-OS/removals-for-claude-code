@@ -1,14 +1,15 @@
 ---
-description: Make this system yours in plain language. Add a field, rename stages, change a rule, add a column to a document. Writes the migration, applies it, updates the commands that touch it.
+description: Make it the mover's own: change a rate or a period, add a field, rename a job type, or add a check, in plain language. The migration is written, tested and applied.
 ---
 
-The operator will describe a change in their own words, for example "add a PO number to every order", "our stages are Enquiry, Site Visit, Quoted, Booked, Done", "invoices are due in 14 days not 20", "put the account manager on the client statement".
+# /customise
 
-1. Read `CLAUDE.md`, the current schema in `supabase/migrations/`, and any command or document that touches the thing being changed. Say back in one line what you are about to change and where.
-2. Write the next numbered migration in `supabase/migrations/` (never edit an applied one). Keep names plain and lowercase. Default new columns sensibly so existing rows stay valid.
-3. Test the new migration on a temporary database first. Use a separate DATA_DIR with DATABASE_URL empty, run migrate and seed, and inspect the changed records. Never seed the working database. If the migration fails, fix it and repeat on fresh temporary data.
-4. Update every place the change shows up: the CLI output, the affected slash commands, `views.json`, the document templates, the import mapping, and the README command table.
-5. Run `npm test`. Add an assertion for the new behaviour if the change is visible in a command's output.
-6. Apply the tested migration to the intended working database with `npm run migrate`, within the operator's authorised change. Update `brand.json` if the change is a branding one (business name, logo, colours) instead of a schema one, and rerun `npm run docs` or `npm run view` to show it.
+The operator describes a change, for example "our hourly rate is $195 for two men and a truck", "deposit is 25%", "quotes are valid for 14 days", "add a piano surcharge", "we run two depots", "track container numbers on storage", "storage overdue notice at 21 days".
 
-Report in three lines: what changed, the migration file, the commands that now show it. Never delete a column or a table without an explicit yes in this session.
+1. Read `supabase/migrations/`, `scripts/lib/domain.mjs` and the matching command recipe. Say back in one line what changes and where.
+2. If it is a setting (rates, deposit, quote validity, any period or limit on the profile), change it with `node scripts/removals.mjs set company_profile '{"hourly_rate":195}'`. No code.
+3. Otherwise write the next numbered migration (`supabase/migrations/0002_<what>.sql`). Never edit an applied migration. Update `fields` in `scripts/lib/domain.mjs` if the field should be writable, the queries, the documents in `documents.json`, the import mapping in `scripts/lib/import.mjs` and the recipe in `.claude/commands/`.
+4. Back up first: `node scripts/removals.mjs export backup.json`. Test on a temporary database (`DATA_DIR=/tmp/try npm run demo`), then `npm test`, adding an assertion in `scripts/smoke.mjs` for the new rule.
+5. Apply with `npm run migrate` on the working database. Show before and after on real records.
+
+A customer booking page, a crew phone app, card payments or a link to your accounting system is a separate build, not a customisation here.
